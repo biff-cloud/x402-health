@@ -1,0 +1,347 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "x402 Health (x402)",
+  "description": "Health checks, uptime history and a reliability-ranked directory of x402 services, paid per call in USDC on Solana via x402. Informational only; no guarantee of any listed service.",
+  "version": "1.0.0"
+ },
+ "paths": {
+  "/health": {
+   "get": {
+    "summary": "Health",
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/check": {
+   "get": {
+    "summary": "Check",
+    "description": "Probe a URL now: reachability, HTTP 402 validity, accepted network/price/payTo, latency, plus 7-day history.",
+    "operationId": "check_v1_check_get",
+    "parameters": [
+     {
+      "name": "url",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "description": "x402 resource URL to probe",
+       "title": "Url"
+      },
+      "description": "x402 resource URL to probe"
+     },
+     {
+      "name": "method",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "pattern": "^(GET|POST)$",
+       "default": "GET",
+       "title": "Method"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     },
+     "402": {
+      "description": "Payment Required (x402 v2; see PAYMENT-REQUIRED header)"
+     }
+    },
+    "x-payment-info": {
+     "protocols": [
+      "x402"
+     ],
+     "price": {
+      "mode": "fixed",
+      "currency": "USD",
+      "amount": "0.005"
+     },
+     "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+     "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+     "payTo": "J41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d"
+    }
+   }
+  },
+  "/v1/history": {
+   "get": {
+    "summary": "History",
+    "description": "Uptime / validity / latency history from our periodic probes (no live probe).",
+    "operationId": "history_v1_history_get",
+    "parameters": [
+     {
+      "name": "url",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Url"
+      }
+     },
+     {
+      "name": "days",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 30,
+       "minimum": 1,
+       "default": 7,
+       "title": "Days"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     },
+     "402": {
+      "description": "Payment Required (x402 v2; see PAYMENT-REQUIRED header)"
+     }
+    },
+    "x-payment-info": {
+     "protocols": [
+      "x402"
+     ],
+     "price": {
+      "mode": "fixed",
+      "currency": "USD",
+      "amount": "0.002"
+     },
+     "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+     "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+     "payTo": "J41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d"
+    }
+   }
+  },
+  "/v1/reliable": {
+   "get": {
+    "summary": "Reliable",
+    "description": "Ranked reliable x402 services (crawled from public discovery catalogs, scored by our probes).",
+    "operationId": "reliable_v1_reliable_get",
+    "parameters": [
+     {
+      "name": "category",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "ai, crypto-data, search-scrape, finance, data, media, other",
+       "title": "Category"
+      },
+      "description": "ai, crypto-data, search-scrape, finance, data, media, other"
+     },
+     {
+      "name": "network",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "substring of CAIP-2 network, e.g. solana or eip155:8453",
+       "title": "Network"
+      },
+      "description": "substring of CAIP-2 network, e.g. solana or eip155:8453"
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 100,
+       "minimum": 1,
+       "default": 20,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     },
+     "402": {
+      "description": "Payment Required (x402 v2; see PAYMENT-REQUIRED header)"
+     }
+    },
+    "x-payment-info": {
+     "protocols": [
+      "x402"
+     ],
+     "price": {
+      "mode": "fixed",
+      "currency": "USD",
+      "amount": "0.01"
+     },
+     "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+     "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+     "payTo": "J41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d"
+    }
+   }
+  },
+  "/categories": {
+   "get": {
+    "summary": "Categories",
+    "description": "Free: category counts in the crawled catalog.",
+    "operationId": "categories_categories_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/.well-known/x402": {
+   "get": {
+    "summary": "Discovery",
+    "operationId": "discovery__well_known_x402_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  }
+ },
+ "servers": [
+  {
+   "url": "https://x402-health.onrender.com"
+  }
+ ]
+}
