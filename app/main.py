@@ -56,6 +56,38 @@ async def reliable(category: str | None = Query(None, description="ai, crypto-da
     """Ranked reliable x402 services (crawled from public discovery catalogs, scored by our probes)."""
     return {"category": category, "network": network, "results": ranked(category, network, limit)}
 
+BASE = os.getenv("PUBLIC_BASE_URL", "https://x402-health.onrender.com").rstrip("/")
+LLMS = f"""# x402 Health
+
+> Pay-per-call health checks and a reliability-ranked directory of x402 services, for AI agents that want to know
+> whether an x402 endpoint works before paying it. Paid in USDC on Solana mainnet via x402 v2 (exact). No accounts, no API keys.
+
+## Paid endpoints (unpaid requests get HTTP 402 with a PAYMENT-REQUIRED header)
+- [GET /v1/check?url=URL&method=GET]({BASE}/v1/check): $0.005. Live probe: reachable, valid 402 metadata, network/price/payTo, latency, 7-day uptime
+- [GET /v1/history?url=URL&days=7]({BASE}/v1/history): $0.002. Uptime, validity and latency history (up to 30 days)
+- [GET /v1/reliable?category=ai&network=solana]({BASE}/v1/reliable): $0.01. Ranked reliable services. Categories: ai, crypto-data, search-scrape, finance, data, media, other
+
+## Free
+- [OpenAPI with x-payment-info]({BASE}/openapi.json)
+- [x402 discovery]({BASE}/.well-known/x402)
+- [Category counts]({BASE}/categories)
+- [Source, MCP server, examples](https://github.com/biff-cloud/x402-health)
+
+Informational only. A good score does not guarantee a service is honest or safe to pay.
+"""
+
+from fastapi.responses import PlainTextResponse, JSONResponse
+
+@app.get("/llms.txt", response_class=PlainTextResponse, include_in_schema=False)
+async def llms():
+    return LLMS
+
+@app.get("/.well-known/api-catalog", include_in_schema=False)
+async def api_catalog():
+    return JSONResponse({"linkset": [{"anchor": BASE, "service-desc": [{"href": f"{BASE}/openapi.json", "type": "application/vnd.oai.openapi+json"}],
+                         "service-doc": [{"href": "https://github.com/biff-cloud/x402-health#readme"}],
+                         "status": [{"href": f"{BASE}/health"}]}]}, media_type="application/linkset+json")
+
 @app.get("/categories")
 async def categories():
     """Free: category counts in the crawled catalog."""

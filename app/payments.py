@@ -98,6 +98,8 @@ def install(app):
         s["info"]["description"] = ("Health checks, uptime history and a reliability-ranked directory of x402 services, paid per call "
                                     "in USDC on Solana via x402. Informational only; no guarantee of any listed service.")
         s["servers"] = [{"url": base}]
+        s["info"]["contact"] = {"name": "GitHub issues", "url": "https://github.com/biff-cloud/x402-health/issues"}
+        s["info"]["license"] = {"name": "MIT"}
         for path, ops in s["paths"].items():
             key = f"GET {path}"
             if key not in ROUTES: continue
