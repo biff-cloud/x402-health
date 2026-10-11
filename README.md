@@ -20,7 +20,7 @@ pip install -r requirements.txt
 X402_ENABLED=0 uvicorn app.main:app            # no payments, local dev
 X402_ENABLED=0 python -m pytest -q
 ```
-Deploy: Render Blueprint from this repo (`render.yaml`). On the free plan history is in SQLite under /tmp and resets on restart.
+Deploy: Render Blueprint from this repo (`render.yaml`). On the free plan history is in SQLite under /tmp and resets on restart. Render free gives 750 instance-hours/month per workspace, shared with another service, so the keepalive workflow pings only 14:00-23:59 UTC (~318 h/month per service); outside that window the first call may take about a minute while the instance wakes.
 
 ## Safety
 Targets must be public http(s) hosts; private, loopback and link-local addresses are refused. Redirects are not followed.
