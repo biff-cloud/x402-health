@@ -1,16 +1,23 @@
 """x402 Health: pay-per-call health checks and a reliability-ranked directory of x402 services."""
 import asyncio, json, os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from app import store
 from app.probe import probe, BadTarget
 
-app = FastAPI(title="x402 Health", version="1.0.0",
-              description="Check whether an x402 endpoint is up and serves valid 402 payment metadata; uptime history; reliable services by category.")
-
-@app.on_event("startup")
-async def _start():
+@asynccontextmanager
+async def _lifespan(_app):
+    # Hold a strong ref: asyncio keeps only weak refs to tasks, so a bare create_task can be GC'd.
+    task = None
     if os.getenv("CRAWLER_ENABLED", "1") == "1":
-        asyncio.create_task(__import__("app.crawler", fromlist=["loop"]).loop())
+        from app.crawler import loop
+        task = asyncio.create_task(loop())
+    yield
+    if task:
+        task.cancel()
+
+app = FastAPI(title="x402 Health", version="1.0.0", lifespan=_lifespan,
+              description="Check whether an x402 endpoint is up and serves valid 402 payment metadata; uptime history; reliable services by category.")
 
 @app.get("/health")
 async def health():
