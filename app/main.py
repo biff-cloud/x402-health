@@ -21,7 +21,7 @@ app = FastAPI(title="x402 Health", version="1.0.0", lifespan=_lifespan,
 
 @app.get("/health")
 async def health():
-    return {"ok": True, **store.stats()}
+    return {"ok": True, "commit": os.getenv("RENDER_GIT_COMMIT", "")[:7] or None, **store.stats()}
 
 @app.get("/v1/check")
 async def check(url: str = Query(..., description="x402 resource URL to probe"),

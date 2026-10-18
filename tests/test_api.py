@@ -26,3 +26,9 @@ assert s["category"] == "ai" and s["price_usd"] == 0.003
     rows = [json.loads(l) for l in out.stdout.strip().splitlines()]
     assert [r[1] for r in rows] == ["5000", "2000", "10000"]
     assert all(r[2] == "J41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d" for r in rows)
+
+def test_health_reports_deployed_commit(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "5cc5a1cdeadbeef")
+    assert TestClient(app).get("/health").json()["commit"] == "5cc5a1c"
