@@ -1,9 +1,10 @@
 """x402 pay-per-call (Solana USDC) for /v1/*. Pattern reused from solana-agent-toolbox.
 
 Env: X402_ENABLED, PAY_TO_ADDRESS, X402_NETWORK (CAIP-2), PAY_ASSET, FACILITATOR_URL or FACILITATOR_KEYPAIR,
-PAYMENT_RPC_URL, PUBLIC_BASE_URL, PRICE_CHECK / PRICE_HISTORY / PRICE_RELIABLE (atomic USDC units).
+PAYMENT_RPC_URL, PUBLIC_BASE_URL, EXAMPLE_TARGET_URL, PRICE_CHECK / PRICE_HISTORY / PRICE_RELIABLE (atomic USDC units).
 """
 import json, os
+from urllib.parse import quote
 from solders.keypair import Keypair
 from x402 import x402ResourceServer, x402Facilitator
 from x402.http import HTTPFacilitatorClient
@@ -17,17 +18,20 @@ from x402.extensions.bazaar.resource_service import OutputConfig
 
 DEFAULT_DEVNET_PAY_TO = "9ZPaDj2Qcg4gXXEhArSNmtdHHSrXPWKmsDecnt94D44V"  # throwaway devnet address
 EX = "https://api.example.com/paid"
+# Live x402 endpoint used in discovery examples; override when the toolbox moves off Render.
+_TARGET = quote(os.getenv("EXAMPLE_TARGET_URL",
+    "https://solana-agent-toolbox.onrender.com/v1/wallet/J41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d"), safe="")
 
 # route -> (env price var, default atomic, description, tags, query example, output example, example path)
 ROUTES = {
     "GET /v1/check": ("PRICE_CHECK", "5000", "Live health check of any x402 endpoint: reachable, valid 402 metadata, network/price/payTo, latency, 7-day uptime",
                       ["x402", "health-check", "monitoring", "uptime"], {"url": EX},
                       {"reachable": True, "status": 402, "validX402": True, "latencyMs": 180, "accepts": [{"network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", "amountAtomic": "5000", "payTo": "..."}], "problems": []},
-                      "/v1/check?url=https%3A%2F%2Fsolana-agent-toolbox.onrender.com%2Fv1%2Fwallet%2FJ41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d"),
+                      "/v1/check?url=" + _TARGET),
     "GET /v1/history": ("PRICE_HISTORY", "2000", "Uptime, x402-validity and latency history (up to 30 days) for an x402 endpoint",
                         ["x402", "uptime", "history", "monitoring"], {"url": EX, "days": "7"},
                         {"checks": 48, "uptimePct": 97.9, "validX402Pct": 95.8, "medianLatencyMs": 210},
-                        "/v1/history?url=https%3A%2F%2Fsolana-agent-toolbox.onrender.com%2Fv1%2Fwallet%2FJ41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d"),
+                        "/v1/history?url=" + _TARGET),
     "GET /v1/reliable": ("PRICE_RELIABLE", "10000", "Ranked reliable x402 services by category/network, from public x402 catalogs scored by our probes",
                          ["x402", "directory", "discovery", "reliability"], {"category": "ai", "network": "solana", "limit": "20"},
                          {"results": [{"url": "...", "category": "ai", "uptimePct": 100.0, "validX402Pct": 100.0, "score": 98.2}]},
