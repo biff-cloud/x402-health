@@ -1,7 +1,7 @@
 """x402 Health: pay-per-call health checks and a reliability-ranked directory of x402 services."""
 import asyncio, json, os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from app import store
 from app.probe import probe, BadTarget
 
@@ -18,6 +18,12 @@ async def _lifespan(_app):
 
 app = FastAPI(title="x402 Health", version="1.0.0", lifespan=_lifespan,
               description="Check whether an x402 endpoint is up and serves valid 402 payment metadata; uptime history; reliable services by category.")
+
+@app.middleware("http")
+async def api_catalog_link(request: Request, call_next):
+    resp = await call_next(request)
+    resp.headers.setdefault("Link", '</.well-known/api-catalog>; rel="api-catalog"')  # RFC 9727 discovery
+    return resp
 
 @app.get("/health")
 async def health():
