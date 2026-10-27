@@ -28,6 +28,7 @@ assert s["category"] == "ai" and s["price_usd"] == 0.003
     assert all(r[2] == "J41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d" for r in rows)
 
 def test_health_reports_deployed_commit(monkeypatch):
+    monkeypatch.setenv("X402_ENABLED", "0")  # app import must not need a facilitator
     from fastapi.testclient import TestClient
     from app.main import app
     monkeypatch.setenv("RENDER_GIT_COMMIT", "5cc5a1cdeadbeef")
