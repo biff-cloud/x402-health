@@ -1,6 +1,25 @@
-import base64, json, os, subprocess, sys
+import base64, json, os, subprocess, sys, threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+MAINNET = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+SUPPORTED = {"kinds": [{"x402Version": 2, "scheme": "exact", "network": MAINNET,
+                        "extra": {"feePayer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww"}}],
+             "extensions": ["bazaar"], "signers": {"solana:*": ["CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww"]}}
+
+class _Fac(BaseHTTPRequestHandler):
+    def do_GET(self):
+        body = json.dumps(SUPPORTED).encode()
+        self.send_response(200 if self.path == "/supported" else 404)
+        self.send_header("content-type", "application/json"); self.end_headers(); self.wfile.write(body)
+    def log_message(self, *a): pass
+
+def stub_facilitator():
+    srv = HTTPServer(("127.0.0.1", 0), _Fac)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv
 
 def test_paid_routes_return_402(tmp_path):
+    fac = stub_facilitator()  # offline: no live facilitator needed for unpaid 402s
     code = r'''
 import base64, json
 from fastapi.testclient import TestClient
@@ -19,9 +38,12 @@ s = crawler.normalize({"resource": "https://a.test/x", "description": "LLM infer
 assert s["category"] == "ai" and s["price_usd"] == 0.003
 '''
     env = {**os.environ, "X402_ENABLED": "1", "X402_NETWORK": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
-           "PAY_TO_ADDRESS": "J41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d", "FACILITATOR_URL": "https://facilitator.payai.network",
+           "PAY_TO_ADDRESS": "J41TaA2hn4YpASarwJK3oByxrKkpQDRVWaNyNCFV6o3d", "FACILITATOR_URL": f"http://127.0.0.1:{fac.server_port}",
            "CRAWLER_ENABLED": "0", "DB_PATH": str(tmp_path / "t.db"), "PYTHONPATH": "."}
-    out = subprocess.run([sys.executable, "-W", "ignore", "-c", code], env=env, capture_output=True, text=True)
+    try:
+        out = subprocess.run([sys.executable, "-W", "ignore", "-c", code], env=env, capture_output=True, text=True)
+    finally:
+        fac.shutdown()
     assert out.returncode == 0, out.stderr[-2000:]
     rows = [json.loads(l) for l in out.stdout.strip().splitlines()]
     assert [r[1] for r in rows] == ["5000", "2000", "10000"]
